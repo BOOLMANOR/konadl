@@ -1,54 +1,115 @@
-# Konachan Downloader
+此教程适用于Windows和Linux
 
-**Please read the [EULA](https://github.com/K4YT3X/konadl#eula) section carefully before starting to use this software.**
+如果您是普通用户并且希望用此工具来下载图片，那么此篇教程将适合您。
 
-libkonadl Version: **1.9.0**  
-KonaDL CLI Version: **1.3.9**
+首先，克隆代码
 
-## **[Video Demo](https://youtu.be/a2_tC_uugP4)**
+$ git clone https://github.com/K4YT3X/konadl.git
+$ cd konadl
+然后安装 Python 依赖库
 
-## **[Usages | 使用教程](https://github.com/K4YT3X/konadl/wiki)**
+$ pip install -r requirements.txt
+最后运行 konadl_cli.py
 
-Please refer to the [wiki page](https://github.com/K4YT3X/konadl/wiki) for usages and instructions.
+以下是一个简单的 KonaDL 运行配置。此配置会将10页的 safe，questionable 和 explicit 评级图片下载到 /tmp/konachan。
 
-## Important Features
+$ python3 konadl_cli.py -o /tmp/konachan -e -s -q -n 10
+您也可以手动设定多线程下载线程的数量。大多数情况下，默认设定足矣
+-c 10 将会启用10条页面爬虫线程，默认10条。
+-d 20 将会启用20条下载器线程，默认20条。
 
-Just preventing people from missing this.
+$ python3 konadl_cli.py -o /tmp/konachan -e -s -q -n 10 -c 10 -d 20
+您可以使用 --update 开关来更新已经下载完的图片库。设定会跟随上次下载。
 
-- **You can press Ctrl+C at any time to pause the download.**  
-**The progress will be saved and you will be prompted automatically to continue the next time you launch the program.**
-- **The program can now recover itself from all kinds of errors and continue downloading**  
-**Examples:**
-   - Temporary network issues
-   - Temporary server-side situations
+$ python3 konadl_cli.py -o /tmp/konachan/ --update
+完整用法如下:
 
-## libkonadl 1.9.0 (October 19, 2018)
+usage: konadl_cli.py [-h] [-n PAGES] [-a] [-p PAGE] [-y] [-o STORAGE] [-u]
+                     [-s] [-q] [-e] [-c CRAWLERS] [-d DOWNLOADERS] [-v]
 
-1. Changed metadata format from INI to JSON.
-1. Fixed all the problems with pausing and resuming the download by serializing and storing queues instead of dumping queues into files.
+optional arguments:
+  -h, --help            show this help message and exit
 
-## KonadDL CLI 1.3.9 (October 19, 2018)
+Controls:
+  -n PAGES, --pages PAGES
+                        Number of pages to download
+  -a, --all             Download all images
+  -p PAGE, --page PAGE  Crawl a specific page
+  -y, --yandere         Crawl Yande.re site
+  -o STORAGE, --storage STORAGE
+                        Storage directory
+  -u, --update          Update new images
 
-1. Changed class names to follow python naming conventions.
-1. Updated for avalon framework 1.6.1.
+Ratings:
+  -s, --safe            Include Safe rated images
+  -q, --questionable    Include Questionable rated images
+  -e, --explicit        Include Explicit rated images
 
-![konadl1 7](https://user-images.githubusercontent.com/21986859/39401587-a75ab99e-4b16-11e8-8282-7b7c10853751.png)
+Threading:
+  -c CRAWLERS, --crawlers CRAWLERS
+                        Number of post crawler threads
+  -d DOWNLOADERS, --downloaders DOWNLOADERS
+                        Number of downloader threads
 
-## What This Is
+Extra:
+  -v, --version         Show KonaDL version and exit
+  
+  
+  以下是 libkonadl 简单使用介绍。
 
-**It bulk downloads images from Konachan.com and Yande.re with high speed.**
+from libkonadl import konadl  # 导入konadl库
 
-KonaDL CLI is a standalone application that uses libkonadl to bulk download images from konachan.com / konachan.net / yande.re. It provides better user interface comparing to libkonadl, but it cannot be used as a library.
+""" 爬虫示例
 
-libkonadl is a library that helps you bulk downloading images according to ratings (Safe/Questionable/Explicit) from konachan.com / konachan.net / yande.re with multithreading. It can also run as a standalone program that can run directly on any platform that supports python (at least according to the current design).
+最基本地从 konachan.com 下载图片。
+"""
+kona = konadl()  # 创建爬虫对象
 
-## EULA
-By using the "konadl" software ("this software") you agree to this EULA. If you do not agree to the EULA, stop using this software immediately.
+# 设置存储位置
+# 注意在尾部有一个 “/”
+kona.storage = '/tmp/konachan/'
+if not os.path.isdir(kona.storage):  # 如果目标路径不存在则退出
+    print('Error: storage directory not found')
+    exit(1)
 
-- **By enabling crawling from [Konachan.com](Konachan.com) you agree to the [ToS of Konachan.com](https://konachan.com/static/terms_of_service).**  
-- **By enabling crawling from [Yande.re](Yande.re) you agree to the [ToS of Yande.re](https://yande.re/static/terms_of_service).**
-- You must respect the website requests (ex. stop the software when HTTP 429 is received).
-- You need to have the developer's permission before using this software for commercial purposes.
-- You must obey the law of the country which you are in.
+# 如果您想从 yande.re 下载图片则设置此项为 True
+kona.yandere = False
 
-Just thought it would be fun to have an EULA.
+# 根据评级下载图片
+kona.safe = True            # 包含 Safe 评级别图片
+kona.questionable = False   # 包含 Questionable 评级别图片
+kona.explicit = False       # 包含 Explicit 评级别图片
+
+# 设置页面爬虫和下载器线程数量
+kona.post_crawler_threads_amount = 10
+kona.downloader_threads_amount = 20
+kona.pages = 3  # 爬前三页
+if os.path.isfile(kona.progress_file):
+    print('Loading downloading progress')
+    kona.load_progress = True
+
+# 执行
+kona.crawl()
+print('\nMain thread exited without errors')
+print('Time taken: {} seconds'.format(round((time.time() - kona.begin_time), 5)))
+如果您想下载所有页面
+
+kona.crawl_all_pages()
+您可以用以下格式覆写 method
+
+class konadl_avalon(konadl):
+    """ Overwrite original methods for better
+    appearance and readability.
+    """
+
+    def print_retrieval(self, url):
+        avalon.dbgInfo("Retrieving: {}".format(url))
+
+    def print_crawling_page(self, page):
+        avalon.info('Crawling page: {}{}#{}'.format(avalon.FM.BD, avalon.FG.W, page))
+
+    def print_thread_exit(self, name):
+        avalon.dbgInfo('[libkonadl] {} thread exiting'.format(name))
+
+# 从覆写过的类创建对象
+kona = konadl_avalon()
